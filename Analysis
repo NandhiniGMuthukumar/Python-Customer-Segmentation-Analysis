@@ -1,0 +1,61 @@
+pip install pandas matplotlib seaborn scikit-learn
+
+# Import necessary libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+
+# Load the dataset (example: using Mall Customer Segmentation dataset)
+data_url = "https://raw.githubusercontent.com/victorgau/Python_ML_DL/master/kmeans/Mall_Customers.csv"
+df = pd.read_csv(data_url)
+
+# Display the first few rows of the dataset
+print(df.head())
+
+# Explore the dataset
+print(df.info())
+print(df.describe())
+
+# Select relevant features for clustering (example: Annual Income and Spending Score)
+X = df[['Annual Income (k$)', 'Spending Score (1-100)']]
+
+# Standardize the features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Determine the optimal number of clusters using the elbow method
+wcss = []
+for i in range(1, 11):
+    kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=300, n_init=10, random_state=0)
+    kmeans.fit(X_scaled)
+    wcss.append(kmeans.inertia_)
+
+# Plot the elbow method graph
+plt.figure(figsize=(8, 6))
+plt.plot(range(1, 11), wcss, marker='o', linestyle='--')
+plt.title('Elbow Method for Optimal k')
+plt.xlabel('Number of clusters (k)')
+plt.ylabel('Within-Cluster Sum of Squares (WCSS)')
+plt.show()
+
+# Based on the elbow method, let's choose k=5
+optimal_k = 5
+
+# Apply K-means clustering
+kmeans = KMeans(n_clusters=optimal_k, init='k-means++', max_iter=300, n_init=10, random_state=0)
+df['Cluster'] = kmeans.fit_predict(X_scaled)
+
+# Visualize the clusters
+plt.figure(figsize=(10, 8))
+sns.scatterplot(data=df, x='Annual Income (k$)', y='Spending Score (1-100)', hue='Cluster', palette='viridis', s=80)
+plt.title('Customer Segmentation Analysis')
+plt.xlabel('Annual Income (k$)')
+plt.ylabel('Spending Score (1-100)')
+plt.show()
+
+# Evaluate cluster quality using silhouette score
+silhouette_avg = silhouette_score(X_scaled, df['Cluster'])
+print(f'Silhouette Score for {optimal_k} clusters: {silhouette_avg:.2f}')
